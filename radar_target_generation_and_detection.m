@@ -34,7 +34,7 @@ v = -20;
 % chirp using the requirements above.
 
 B = c / (2 * rangeResolution);
-Tchirp = rtt * (2 * maxRange / c); 
+Tchirp = rtt * 2 * maxRange / c; 
 slope =  B / Tchirp;
                                                           
 %The number of chirps in one sequence. Its ideal to have 2^ value for the ease of running the FFT
@@ -53,10 +53,6 @@ t=linspace(0,Nd*Tchirp,Nr*Nd); %total time for samples
 Tx=zeros(1,length(t)); %Tcransmitted signal
 Rx=zeros(1,length(t)); %received signal
 Mix = zeros(1,length(t)); %beat signal
-
-%Similar vectors for range_covered and time delay.
-r_t=zeros(1,length(t));
-Tcd=zeros(1,length(t));
 
 
 %% Signal generation and Moving Target simulation
@@ -93,7 +89,7 @@ mix_nd = reshape(Mix, [Nr, Nd]);
  % *%TODO* :
 %run the FFT on the beat signal along the range bins dimension (Nr) and
 %normalize.
-range_fft = fft(mix_nd) / Nr;
+range_fft = fft(mix_nd) ./ Nr;
 
  % *%TODO* :
 % Take the absolute value of FFT output
