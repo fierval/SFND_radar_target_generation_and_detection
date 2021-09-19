@@ -9,13 +9,22 @@ clc;
 % Max Velocity = 100 m/s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%Operating carrier frequency of Radar 
+fc= 77e9;             %carrier freq
+maxRange = 200;
+rangeResolution = 1;
+maxVel = 100;
+rtt = 5.5;
+
 %speed of light = 3e8
+c = 3e8;
 %% User Defined Range and Velocity of target
 % *%TODO* :
 % define the target's initial position and velocity. Note : Velocity
 % remains contant
  
-
+R = 110;
+v = -20;
 
 %% FMCW Waveform Generation
 
@@ -24,10 +33,9 @@ clc;
 % Calculate the Bandwidth (B), Chirp Time (Tchirp) and Slope (slope) of the FMCW
 % chirp using the requirements above.
 
-
-%Operating carrier frequency of Radar 
-fc= 77e9;             %carrier freq
-
+B = c / (2 * rangeResolution);
+Tchirp = rtt * (2 * maxRange / c); 
+slope =  B / Tchirp;
                                                           
 %The number of chirps in one sequence. Its ideal to have 2^ value for the ease of running the FFT
 %for Doppler Estimation. 
@@ -42,13 +50,13 @@ t=linspace(0,Nd*Tchirp,Nr*Nd); %total time for samples
 
 
 %Creating the vectors for Tx, Rx and Mix based on the total samples input.
-Tx=zeros(1,length(t)); %transmitted signal
+Tx=zeros(1,length(t)); %Tcransmitted signal
 Rx=zeros(1,length(t)); %received signal
 Mix = zeros(1,length(t)); %beat signal
 
 %Similar vectors for range_covered and time delay.
 r_t=zeros(1,length(t));
-td=zeros(1,length(t));
+Tcd=zeros(1,length(t));
 
 
 %% Signal generation and Moving Target simulation
@@ -59,18 +67,18 @@ for i=1:length(t)
     
     % *%TODO* :
     %For each time stamp update the Range of the Target for constant velocity. 
+    % This is done inside the send_signal function
     
     % *%TODO* :
-    %For each time sample we need update the transmitted and
+    %For each time sample we need update the Tcransmitted and
     %received signal. 
-    Tx(i) = 
-    Rx (i)  =
+    [Tx(i), Rx(i)]  = signals(fc, slope, R, v, t(i));
     
     % *%TODO* :
-    %Now by mixing the Transmit and Receive generate the beat signal
-    %This is done by element wise matrix multiplication of Transmit and
+    %Now by mixing the Tcransmit and Receive generate the beat signal
+    %This is done by element wise maTcrix multiplication of Tcransmit and
     %Receiver Signal
-    Mix(i) = 
+    Mix(i) = Tx(i) .* Rx(i);
     
 end
 
@@ -80,27 +88,30 @@ end
  % *%TODO* :
 %reshape the vector into Nr*Nd array. Nr and Nd here would also define the size of
 %Range and Doppler FFT respectively.
+mix_nd = reshape(Mix, [Nr, Nd]);
 
  % *%TODO* :
 %run the FFT on the beat signal along the range bins dimension (Nr) and
 %normalize.
+range_fft = fft(mix_nd) / Nr;
 
  % *%TODO* :
 % Take the absolute value of FFT output
+range_fft = abs(range_fft);
 
  % *%TODO* :
-% Output of FFT is double sided signal, but we are interested in only one side of the spectrum.
+% Output of FFT is double sided signal, but we are interested in only one side of the specTcrum.
 % Hence we throw out half of the samples.
-
+range_fft = range_fft(1:(Nr/2));
 
 %plotting the range
 figure ('Name','Range from First FFT')
-subplot(2,1,1)
+subplot(3,1,1)
 
  % *%TODO* :
  % plot FFT output 
 
- 
+plot(range_fft); 
 axis ([0 200 0 1]);
 
 
@@ -126,36 +137,47 @@ sig_fft2 = fft2(Mix,Nr,Nd);
 sig_fft2 = sig_fft2(1:Nr/2,1:Nd);
 sig_fft2 = fftshift (sig_fft2);
 RDM = abs(sig_fft2);
-RDM = 10*log10(RDM) ;
+RDM = pow2db(RDM) ;
 
 %use the surf function to plot the output of 2DFFT and to show axis in both
 %dimensions
 doppler_axis = linspace(-100,100,Nd);
 range_axis = linspace(-200,200,Nr/2)*((Nr/2)/400);
-figure,surf(doppler_axis,range_axis,RDM);
-
+subplot(3,1,2);
+surf(doppler_axis,range_axis,RDM);
+colorbar;
 %% CFAR implementation
 
 %Slide Window through the complete Range Doppler Map
 
 % *%TODO* :
-%Select the number of Training Cells in both the dimensions.
+%Select the number of training Cells in both the dimensions.
+Tcr = 6;
+Tcd = 2;
 
 % *%TODO* :
 %Select the number of Guard Cells in both dimensions around the Cell under 
 %test (CUT) for accurate estimation
+Gcr = 3;
+Gcd = 1;
 
 % *%TODO* :
 % offset the threshold by SNR value in dB
+offset = 10;
 
 % *%TODO* :
 %Create a vector to store noise_level for each iteration on training cells
-noise_level = zeros(1,1);
 
+CUT = 1;
+training_Gcrid = (2*Tcr+2*Gcr+1)*(2*Tcd+2*Gcd+1);
+n_guard = (2*Gcr+1)*(2*Gcd+1) - CUT;
+n_training = training_Gcrid - n_guard - CUT;
+
+filtered_sig = zeros(size(RDM));
 
 % *%TODO* :
 %design a loop such that it slides the CUT across range doppler map by
-%giving margins at the edges for Training and Guard Cells.
+%giving margins at the edges for training and Guard Cells.
 %For every iteration sum the signal level within all the training
 %cells. To sum convert the value from logarithmic to linear using db2pow
 %function. Average the summed values for all of the training
@@ -165,31 +187,34 @@ noise_level = zeros(1,1);
 %it a value of 1, else equate it to 0.
 
 
-   % Use RDM[x,y] as the matrix from the output of 2D FFT for implementing
+   % Use RDM[x,y] as the maTcrix from the output of 2D FFT for implementing
    % CFAR
 
-
-
-
+% we already know the noise leve
+for i = Tcr + Gcr + 1 : Nr/2 - Tcr - Gcr
+    for j = Tcd + Gcd + 1 : Nd - Tcd - Gcd
+      train = db2pow(RDM(i - Tcr - Gcr : i + Tcr + Gcr, j - Tcd - Gcd : j + Tcd + Gcd));
+      train(i - Gcr : i + Gcr, j - Gcd : j + Gcd) = 0;
+      thresh = pow2db(sum(train, 'all') / n_training) + offset;
+      if RDM(i,j) > thresh
+        filtered_sig(i, j) = 1;
+      end
+    end
+end
 
 % *%TODO* :
 % The process above will generate a thresholded block, which is smaller 
 %than the Range Doppler Map as the CUT cannot be located at the edges of
-%matrix. Hence,few cells will not be thresholded. To keep the map size same
+%maTcrix. Hence,few cells will not be thresholded. To keep the map size same
 % set those values to 0. 
  
-
-
-
-
-
-
-
+% Already done through initialization
 
 % *%TODO* :
 %display the CFAR output using the Surf function like we did for Range
 %Doppler Response output.
-figure,surf(doppler_axis,range_axis,'replace this with output');
+subplot(3,1,3)
+surf(doppler_axis,range_axis, filtered_sig);
 colorbar;
 
 
