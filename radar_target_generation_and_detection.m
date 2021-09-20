@@ -148,18 +148,18 @@ colorbar;
 
 % *%TODO* :
 %Select the number of training Cells in both the dimensions.
-Tcr = 6;
+Tcr = 8;
 Tcd = 2;
 
 % *%TODO* :
 %Select the number of Guard Cells in both dimensions around the Cell under 
 %test (CUT) for accurate estimation
-Gcr = 3;
+Gcr = 4;
 Gcd = 1;
 
 % *%TODO* :
 % offset the threshold by SNR value in dB
-offset = 10;
+offset = 8;
 
 % *%TODO* :
 %Create a vector to store noise_level for each iteration on training cells
@@ -191,7 +191,7 @@ for i = Tcr + Gcr + 1 : Nr/2 - Tcr - Gcr
     for j = Tcd + Gcd + 1 : Nd - Tcd - Gcd
       train = db2pow(RDM(i - Tcr - Gcr : i + Tcr + Gcr, j - Tcd - Gcd : j + Tcd + Gcd));
       train(i - Gcr : i + Gcr, j - Gcd : j + Gcd) = 0;
-      thresh = pow2db(sum(train, 'all') / n_training) + offset;
+      thresh = pow2db(sum(train, 'all') / n_training * offset);
       if RDM(i,j) > thresh
         filtered_sig(i, j) = 1;
       end
