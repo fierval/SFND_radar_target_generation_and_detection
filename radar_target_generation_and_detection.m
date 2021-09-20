@@ -101,7 +101,7 @@ range_fft = abs(range_fft);
 range_fft = range_fft(1:(Nr/2));
 
 %plotting the range
-figure ('Name','Range from First FFT')
+figure ('Name','Radar Detection')
 subplot(3,1,1)
 
  % *%TODO* :
