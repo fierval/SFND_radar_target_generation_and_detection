@@ -159,7 +159,7 @@ Gcd = 1;
 
 % *%TODO* :
 % offset the threshold by SNR value in dB
-offset = 8;
+offset = 9;
 
 % *%TODO* :
 %Create a vector to store noise_level for each iteration on training cells
@@ -191,7 +191,7 @@ for i = Tcr + Gcr + 1 : Nr/2 - Tcr - Gcr
     for j = Tcd + Gcd + 1 : Nd - Tcd - Gcd
       train = db2pow(RDM(i - Tcr - Gcr : i + Tcr + Gcr, j - Tcd - Gcd : j + Tcd + Gcd));
       train(i - Gcr : i + Gcr, j - Gcd : j + Gcd) = 0;
-      thresh = pow2db(sum(train, 'all') / n_training * offset);
+      thresh = pow2db(sum(train, 'all') / n_training) + offset;
       if RDM(i,j) > thresh
         filtered_sig(i, j) = 1;
       end
