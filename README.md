@@ -17,7 +17,6 @@ See diagram 2 below. The second illustration plots the signal after Range FFT. T
 
 ## 2D CFAR
 
-See diagram 3 below depicting the results.
 We implement [CA-CFAR](https://en.wikipedia.org/wiki/Constant_false_alarm_rate) by:
 1. Creating the 2D FFT based on ranged FFT.
 2. Initialize the output grid of filtered signal to 0.
@@ -43,6 +42,9 @@ offset = 9;
 Here the ratio of row to column training / guarding cells was picked based on the rows / cols ratio of 4 (`Nr/2 = 512`, `Nd = 128`)
 
 3. The double-loop is used to slide the guarding and training cells mounted around the CUT (cell under test) over the entire grid created in 1. Sliding is done so that **all** of the cells around FFT are found in the grid, meaning that not all of the cells will have a chance to be a CUT. For those cells we set the output signal to 0. This is a noop since we have already initialized the output array to 0.
-4. Compute the threshold value, averaging over training cells and setting the cell corresponding to CUT in the output to 1 if CUT value is greather than the threshold.
+4. Compute the threshold value, averaging over training cells and setting the cell corresponding to CUT in the output to 1 if CUT value is greater than the threshold.
+
+
+See diagram 3 below depicting the results.
 
 ![illustration](images/graphs.png)
